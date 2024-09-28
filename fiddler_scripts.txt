@@ -1,0 +1,571 @@
+class ${
+
+    public static var oSession: Session=null;
+    //初始化 绑定Session
+    public  static function  init(mSession: Session) {
+        oSession= mSession;
+
+    }
+    //获取 Session
+
+    public  static function  get_Session() {
+        return oSession
+    }
+
+    //创建json对象
+    public  static function  json() {
+        var strjson = '{}'
+        var json = Fiddler.WebFormats.JSON.JsonDecode(strjson);
+        var oObj = json.JSONObject;
+        return oObj
+    }
+
+    //把json字符串转为json 对象
+    public static function  json_load(jsonstr) {
+        var json = Fiddler.WebFormats.JSON.JsonDecode(jsonstr);
+        var oObj = json.JSONObject;
+        if((oObj=='System.Collections.ArrayList' || oObj=='System.Collections.Hashtable')){
+
+            return oObj
+        }else{
+            return json()
+        }
+    }
+
+    //提示弹窗信息
+    public static function  alert(msg){
+        FiddlerObject.alert(msg)
+    }
+
+
+    //将json对象转为字符串
+    public static function  json_to_str(jsonobj) {
+        if((jsonobj=='System.Collections.ArrayList' || jsonobj=='System.Collections.Hashtable')){
+            var json_str = Fiddler.WebFormats.JSON.JsonEncode(jsonobj);
+            return json_str
+        }else{
+            return "{}"
+        }
+    }
+
+    //获取对象类型
+    public static function  type(obj) {
+        var typ=obj.GetType()
+        //print2("类型为:",typ)
+        return typ
+
+    }
+
+    //判断a b 类型是否相同  返回ture fasle
+    //typeof只能判断区分基本类型，number、string、boolean、undefined和object,function；
+    // obj.GetType() 获取具体类型
+    public static function  is_str(obj) {
+        return typeof obj == "string"
+
+    }
+
+    //判断是否为 undefined 类型
+    public static function  is_undefined(obj) {
+        return typeof obj == "undefined"
+
+    }
+
+    public static function  is_object(obj) {
+        return typeof obj == "object"
+
+    }
+
+    public static function  is_function(obj) {
+        return typeof obj == "function"
+
+    }
+    public static function  is_boolean(obj) {
+        return typeof obj == "boolean"
+
+    }
+
+
+    //保存为文件 file_full_name 文件名(全路径)    data 写入的数据 支持 dict str 和 json  //is_cover  覆盖 结尾插入
+    public static function write_file(file_full_name, data,is_cover:boolean) {
+        var datastr=""
+        if (data=="System.Collections.Hashtable" || data=='System.Collections.ArrayList' ) {
+            datastr=$.json_to_str(datastr)
+        }else if (data=="System.Collections.Generic.Dictionary`2[System.String,System.Object]") {
+            datastr= $.dict_to_str(data)
+
+        } else if(data.GetType().ToString()=="Fiddler.HTTPRequestHeaders"  ||  data.GetType().ToString()=="Fiddler.HTTPRequestHeaders"   ) {
+            datastr= $.dict_to_str(data)
+
+        }else {
+            datastr=data
+        }
+    
+        var Content: byte[] = System.Text.Encoding.UTF8.GetBytes(datastr);
+
+        //.Default.GetBytes(datastr);  //.ASCII.GetBytes(datastr);
+        if (is_cover){
+            System.IO.File.WriteAllBytes(file_full_name,Content);
+        }else{
+            System.IO.File.AppendAllText(file_full_name,datastr+"\r\n")
+        }
+    }
+
+
+    //读取文件 返回所有字符串  encode_index="" "0" 或"1" 编码都是utf-8
+    public static function open_file(file_full_name:String,encode_index:String) {
+        if(   System.IO.File.Exists(file_full_name)){
+
+            encode_index=encode_index.Trim()
+            if ( $.number(encode_index) < 2 || $.number(encode_index) > 7 ){
+                encode_index="1"
+            }
+            var encodlist= json()
+            encodlist["1"]=System.Text.Encoding.UTF8
+            encodlist["2"]=System.Text.Encoding.Default
+            encodlist["3"]=System.Text.Encoding.ASCII
+            encodlist["4"]=System.Text.Encoding.Unicode
+            encodlist["5"]=System.Text.Encoding.BigEndianUnicode
+            encodlist["6"]=System.Text.Encoding.UTF32
+            encodlist["7"]=System.Text.Encoding.UTF7
+
+
+            return  System.IO.File.ReadAllText(file_full_name,encodlist[encode_index])
+
+
+        }
+        else{
+            print("提示:文件名 "+file_full_name+" ,找不到文件!")
+        }
+
+    }
+    //把字符串转为数字
+    public static function number(nstr)	{
+        return Number(nstr)
+    }
+
+
+    //把字符串转为数字
+    public static function str(value)	{
+        return String(value)
+    }
+
+    //打印输出1
+    public static function  print(str) {
+        FiddlerObject.log(str);
+    }
+
+    //打印输出2
+    public static function print2(str1, str2) {
+        var str3 = str1 + " , " + str2
+        FiddlerObject.log(str3);
+    }
+
+    //打印输出多个参数
+    public static function print3(arguments:Array) {
+        var result = "";
+        for(var i = 0; i < arguments.length; i++){
+            result += arguments[i]+",";
+        }
+        FiddlerObject.log(result);
+    }
+
+    //获取浏览器链接的某个参数值
+    public static function get_short_url(full_url:String)	{
+        if(full_url.Contains("?")){
+            var surlist=full_url.Split("?")
+            return surlist[0]
+
+        }else{
+            var len=full_url.Length
+            if (len>50){
+                len=50
+            }
+
+
+            full_url=full_url.Substring(0,len)
+            if( full_url.Contains(".com") )
+            {
+                full_url.Replace(".com",".com?")
+                return full_url.Split("?")[0]
+
+            }
+
+            full_url=full_url.Substring(0,len)
+            if( full_url.Contains(".cn") )
+            {
+                full_url.Replace(".cn",".cn?")
+                return full_url.Split("?")[0]
+
+            }
+        
+            return full_url.Substring(0,len)
+        }
+    
+    }
+
+    //获取浏览器链接的某个参数值
+    public static function get_url_Prams(key,url)	{
+        var jsondata=get_url_prams_to_json(url)
+        return jsondata[key]
+    }
+
+    //获取浏览器链接所有参数 并转化为json
+    public static function get_url_prams_to_json(url)	{
+        var myjson=json()
+        try{
+            var pramslist=url.Split("?")
+            if (pramslist.Length >1){
+                print2("pramslist.Length",pramslist.Length)
+                var prams=pramslist[1]
+                if(prams!="" && is_str_contain(prams,'=')  ){
+                    var plist=prams.Split("&")
+                    print2("plist",plist.Length)
+                    if (plist.Length >1 ){
+                        for (var i:int = 0; i < plist.Length; i++){
+                            var str1=plist[i];
+                            if (is_str_contain(str1,'=') ){
+                                var dlist=str1.Split("=")
+                                myjson[dlist[0]]=dlist[1]
+                            }
+                        }
+                    }else if(is_str_contain(prams,'=')) {
+
+                        var dlist=prams.Split("=")
+                        myjson[dlist[0]]=dlist[1]
+                    }
+                }
+            }
+        }catch(err){
+            var err;
+        }
+        return myjson
+    }
+
+    //将字符串转化为url格式 不会被特殊符号截断
+    public static function url_encode(str:String){
+        var UrlEncode=System.Net.WebUtility.UrlEncode
+        return UrlEncode(str)
+    }
+
+    //获取Session中的请求内容 RequestBody
+    public static function get_RequestBody_str(){
+
+        var oSession=get_Session()
+        return oSession.GetRequestBodyAsString();
+    }
+
+    //获取Session中的应答中的内容 ResponseBody
+    public static function get_ResponseBody_str(){
+        var oSession=get_Session()
+        return oSession.GetResponseBodyAsString();
+    }
+
+    //获取host
+    public static function get_hostname(){
+        var oSession=get_Session()
+        return oSession.hostname;
+    }
+
+    //获取Request headers对象
+    public static function get_Request_headers(){
+        var oSession=get_Session()
+        return oSession.oRequest.headers;
+    }
+
+    //获取Response headers对象
+    public static function get_Response_headers(){
+        var oSession:Session=get_Session()
+        return oSession.oResponse.headers
+    }
+    //获取全部url
+    public static function get_full_Url(){
+        var oSession=get_Session()
+        return oSession.fullUrl;
+    }
+    //获取Request Cookie
+    public static function get_Request_Cookie(){
+        var oSession=get_Session()
+        if(oSession.oRequest.headers.Exists("Cookie")){
+            return oSession.oRequest["Cookie"];
+        }
+        else{
+            return ""
+        }
+    }
+
+    //获取Response Cookie
+    public static function get_Response_Cookie(){
+        var oSession:Session=get_Session()
+        if(oSession.oResponse.headers.Exists("Cookie")){
+            return oSession.oResponse["Cookie"];
+        }
+        else{
+            return ""
+        }
+
+    }
+
+    //判断字符串是否包含
+    public static function is_str_contain(allstr:String,strfind:String){
+        return allstr.Contains(strfind)
+    }
+
+    //获取长度
+    public static function len(list){
+        return list.Length
+    }
+
+    //会话显示红色.
+    public static function set_ui_color_red(){
+        var oSession=get_Session()
+        oSession["ui-color"] = "red";
+
+    }
+    //隐藏会话
+    public static function set_ui_hide(){
+        var oSession=get_Session()
+        oSession["ui-hide"] = "true";
+
+    }
+    // 将修改后的body，重新写回Request中
+    public static function set_RequestBody_str(strBody){
+        var oSession=get_Session()
+        oSession.utilSetRequestBody(strBody);
+    }
+    //设置Cookie
+    public static function set_Cookie(sCookie){
+        var oSession=get_Session()
+        oSession.oRequest["Cookie"] = sCookie;
+
+    }
+    //获取应答状态值 code
+    public static function response_code(){
+        var oSession=get_Session()
+        return oSession.responseCode;
+    }
+    //解码应答 防止乱码
+    public static function decode_response(){
+        var oSession=get_Session()
+        return oSession.utilDecodeResponse();
+    }
+    //判断host_name是否是 返回 true false
+    public static function is_host_name(hostname:String){
+        var oSession=get_Session()
+        if (oSession.HostnameIs(hostname.Trim())) {
+            return true
+        }
+        else{
+            return false
+        }
+    }
+    //判断host_name_contains  是否包含某个 字符串 是否是 返回 true  false
+    public static function is_host_name_contains(myhostname:String){
+        var hostname:String=$.get_hostname()
+        return hostname.Contains(myhostname)
+    }
+    //判断url是否是包含字符串  返回 true false
+    public static function is_uri_contains(uri:String){
+        var oSession=get_Session()
+        return oSession.uriContains(uri)
+    }
+    //判断headers是否是包含某个key  返回 true false
+    public static function is_headers_Contains(key:String){
+        var oSession=get_Session();
+        return oSession.oRequest.headers.Exists(key);
+
+    }
+    //替换字符串  replace("123455666","55","99")
+    public static function replace(allstr:String,oldstr:String,newstr:String){
+        return allstr.Replace(oldstr,newstr);
+    }
+
+    public static function json_to_Url(myJson){
+        var params=[]
+        for (var de in myJson) {
+            //print(de.Key + "=" + de.Value);
+            params.push(de.Key + "=" + de.Value);
+        }
+        return "?" + params.join("&");
+    }
+    // 把json对象转为   dict 对象
+    public static  function json_to_dict(myjson){
+        var cdict=FiddlerObject.createDictionary()
+        if (myjson=="System.Collections.Hashtable" || myjson=='System.Collections.ArrayList' ) {
+            for (var de in myjson) {
+                cdict.Add(de.Key,de.Value)
+            }
+        }
+        return  cdict
+    }
+
+    // 把dict 对象转json
+    public static function dict_to_json(myditc){
+        //print2("myditc.Type:",myditc.GetType())
+        var jsdata=json()
+        if (myditc=="System.Collections.Generic.Dictionary`2[System.String,System.Object]") {
+
+            for (var de in myditc) {
+                jsdata[de.Key] =de.Value;
+            }
+        }
+        if (myditc.GetType().ToString()=="Fiddler.HTTPRequestHeaders"  ||  myditc.GetType().ToString()=="Fiddler.HTTPRequestHeaders"   ) {
+
+            for (var de in myditc) {
+                //print2("de.GetType:",de.GetType())
+                jsdata[de.Name] =de.Value;
+            }
+        }
+        return jsdata
+    }
+
+    // 把dict 对象转json 字符串
+    public static function dict_to_str(myditc){
+        var jsdict=dict_to_json(myditc)
+
+        return $.json_to_str(jsdict)
+
+    }
+
+    //获取一个dict 对象
+    public static function dict(){
+
+        var di=FiddlerObject.createDictionary()
+        return di
+    }
+
+
+    //发送 网络请求 不等待 如  $.send_Request("127.0.0.1:5000","/","get","{'msg':'hello world'}",1)
+
+    public  static function  send_Request(host: String,path:String,http_method: String,data_str: String,Content_type_index:int) {
+        //Content_type_index 对应
+        // 0 = Content-Type
+        // 1 = application/json
+        // 2 = application/x-www-form-urlencoded
+        // 3 = multipart/form-data
+        // 4 = text/plain
+        // 5 = text/xml
+        // 6 = text/html
+    
+        var Content_typeList=[]
+        Content_typeList.push("*","application/json","application/x-www-form-urlencoded","multipart/form-data","text/plain","text/xml","text/html")
+
+        var Content_type=Content_typeList[Content_type_index] //获取 Content_type 内容
+
+        //print2("Content_type",Content_type)
+
+        var full_url=host+path
+        //判断 如果是GET 方法 把数据放到 url 链接
+
+        if (http_method.Trim()=="get" || http_method.Trim()=="GET"  ){
+
+            var url_data=$.url_encode(data_str)
+            path=path+url_data //这里主要 要在path 后面加上 "?data="  或者使用
+            full_url=host+path
+
+            //print2("full_url:",full_url)
+            data_str="" //把数据 清零 post 不用重复发送了
+        }
+
+        var Content: byte[] = System.Text.Encoding.UTF8.GetBytes(data_str);
+
+        var oRQH: HTTPRequestHeaders = new HTTPRequestHeaders(path, ['Host:' +host,'Content-Length: '+Content.length.ToString(), 'Content-Type: '+Content_type]);
+
+        oRQH.HTTPMethod = http_method;
+
+        var oSD = new System.Collections.Specialized.StringDictionary();
+
+        FiddlerApplication.oProxy.SendRequest(oRQH, Content, oSD, null);//发送请求
+
+        print("***目标地址:"+$.get_short_url(full_url)+", 请求方式:"+http_method+" ,****转发完成****")
+
+    }
+
+    //=============http://127.0.0.1:5000/fidder
+    // Content-Type
+    //*
+    // application/json
+    // application/x-www-form-urlencoded
+    // multipart/form-data
+    // text/plain
+    //  text/xml
+    //  text/html
+    //用SendRequestAndWait 方法发送网络请求  可以获取服务器的数据
+    public static function post(datastr){
+
+        var Content_type="application/json"
+        var Content: byte[] = System.Text.Encoding.UTF8.GetBytes(datastr);
+        var oRQH: HTTPRequestHeaders = new HTTPRequestHeaders("/fidder", ['Host: 127.0.0.1:5000','Content-Length: '+Content.length.ToString(), 'Content-Type: '+Content_type]);
+        oRQH.HTTPMethod = "POST";
+        var oSD = new System.Collections.Specialized.StringDictionary();
+        var newSession = FiddlerApplication.oProxy.SendRequestAndWait(oRQH, Content, oSD, null);
+
+
+        if (200 == newSession.responseCode)
+        {
+            //这里写自己要做的事情代码
+            print(newSession.oResponse.ToString)
+            print("发送请求成功")
+
+        }
+    }
+    public static function ajax_request(filterUrlStr,filterResponsekeyStr,serviceUrlStr){
+        if (oSession.fullUrl.Contains(filterUrlStr)){
+		
+            FiddlerObject.log('found url');
+
+            var html = oSession.GetResponseBodyAsString();
+			
+            if(html.Contains(filterResponsekeyStr)){
+				
+                FiddlerObject.log('found data');
+                
+                //数据统计开始：把内容通过ajax http发送其它地方
+                var url = serviceUrlStr;
+                var _xhr = new ActiveXObject('Microsoft.XMLHTTP');
+				
+                //发送的数据参数
+                var jsonString = oSession.GetResponseBodyAsString();
+                //var requestHeaders = oSession.oRequest.headers.ToString();
+                //var responseHeaders=oSession.oResponse.headers.ToString();
+
+                var str='{}';//构造自己的JSON http请求的信息及返回的结果
+                var data = Fiddler.WebFormats.JSON.JsonDecode(str);
+				
+                data.JSONObject["url"] = oSession.fullUrl;
+                data.JSONObject["responseBody"] = jsonString;
+                //data.JSONObject["requestHeaders"]=requestHeaders;
+                //data.JSONObject["responseHeaders"]=responseHeaders;
+                //data.JSONObject["response_code"] = oSession.responseCode;
+				
+                //FiddlerObject.log(oSession.fullUrl);
+                //FiddlerObject.log(jsonString);
+				
+                //if(oSession.oRequest.headers.Exists("Cookie")){
+                // data.JSONObject["requestCookie"] = oSession.oRequest.headers['Cookie'];
+                // }else{
+                // data.JSONObject["requestCookie"] = 'request no Cookie';
+                // };
+
+                //if(oSession.oResponse.headers.Exists("Cookie")){
+                // data.JSONObject["responseCookie"] = oSession.oResponse.headers['Cookie'];
+                // }else{
+                // data.JSONObject["responseCookie"] = 'response no Cookie';
+                // };
+				
+                var _jsonString = Fiddler.WebFormats.JSON.JsonEncode(data.JSONObject);
+                
+                _xhr.onreadystatechange=function(){
+                        if (_xhr.readyState===4){
+                            FiddlerObject.log(_xhr.responseText);
+                        }
+                    };
+					
+                _xhr.open('POST', url, true);
+                _xhr.send(_jsonString);
+              
+            }
+     
+        } // if controll end
+    }
+
+}
